@@ -40,7 +40,7 @@ export default class RTCPlayer extends Event
         this.pc.onicecandidate = this.e.onicecandidate;
         this.pc.onicecandidateerror = this.e.onicecandidateerror;
         this.pc.ontrack = this.e.ontrack;
-
+        /*
         this.pc.createOffer().then(
             offer=>{
                 this.pc.setLocalDescription(offer).then(()=>{
@@ -62,9 +62,34 @@ export default class RTCPlayer extends Event
         ).catch(e=>{
             debug.error('create offer error:',e);
         });
+        */
+        axios({
+            method: 'post',
+            url:this.options.zlmsdpUrl,
+            responseType:'text'
+        }).then(response=>{
+            debug.log('offer:',response.data);
+            let desc = new RTCSessionDescription();
+            desc.sdp = response.data;
+            desc.type = 'offer';
+            this.pc.setRemoteDescription(desc).then(()=>{
+                this.pc.createAnswer().then(answer=>{
+                    debug.log('answer:',answer.sdp);
+                    this.pc.setLocalDescription(answer).then(()=>{
 
-        
-
+                    }).catch(e=>
+                    {
+                        debug.error('setLocalDescription failed:',e);
+                    });
+                }).catch(e=>{
+                    debug.error('creater answer failed:',e);
+                });
+            }).catch(e=>{
+                debug.error('set remote failed:',e);
+            });
+        }).catch(e=>{
+            debug.error('get anwser failed:',e);
+        });
     }
     _onIceCandidate(event) {
         if (event.candidate) {    
@@ -77,7 +102,7 @@ export default class RTCPlayer extends Event
     }
 
     _onTrack(event){
-        if(this.options.element)
+        if(this.options.element && event.streams && event.streams.length>0)
         {
             this.options.element.srcObject = event.streams[0];
             this.dispatch(PlayerEvents.PLAYER_EVENT_WEBRTC_PLAY_SUCESSS,event);
