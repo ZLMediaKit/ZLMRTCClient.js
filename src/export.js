@@ -1,12 +1,13 @@
-import BaseEvents from './event/base';
-import PlayerEvents from './event/player';
-import RTCPlayer from './player/player';
+import * as events from './base/event';
 import * as compile from './ulity/version';
+import * as media from './base/export';
+import * as endpoint from './endpoint/endpoint';
 
 
 
 console.log('build date:',compile.BUILD_DATE);
 console.log('version:',compile.VERSION);
 
-export const Events = Object.assign({}, BaseEvents, PlayerEvents);
-export const Player = RTCPlayer;
+export const Events = events.default;
+export const Media = media;
+export const Endpoint = endpoint.default;

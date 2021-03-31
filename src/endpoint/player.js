@@ -3,8 +3,7 @@ import { setLogger } from '../ulity/debug';
 import * as debug from '../ulity/debug';
 import Event from '../ulity/event';
 import adapter from 'webrtc-adapter';
-import BaseEvents from '../event/base';
-import PlayerEvents from '../event/player';
+import Events from '../base/event';
 import axios from 'axios';
 
 export default class RTCPlayer extends Event
@@ -26,8 +25,6 @@ export default class RTCPlayer extends Event
         {
             setLogger();
         }
-        debug.log(this.TAG,'version= 21212');
-        debug.log(this.TAG,`adapter ${adapter}`);
 
         this.e = {
             onicecandidate:this._onIceCandidate.bind(this),
@@ -62,7 +59,6 @@ export default class RTCPlayer extends Event
         ).catch(e=>{
             debug.error('create offer error:',e);
         });
-        */
         axios({
             method: 'post',
             url:this.options.zlmsdpUrl,
@@ -90,6 +86,56 @@ export default class RTCPlayer extends Event
         }).catch(e=>{
             debug.error('get anwser failed:',e);
         });
+        */
+
+        this.start();
+    }
+
+    start()
+    {
+        const offerOptions = {};
+        if (typeof this.pc.addTransceiver === 'function') {
+            // |direction| seems not working on Safari.
+            this.pc.addTransceiver('audio', { direction: 'recvonly' });
+            this.pc.addTransceiver('video', { direction: 'recvonly' });
+        } else {
+            offerOptions.offerToReceiveAudio = true;
+            offerOptions.offerToReceiveVideo = true;
+        }
+
+        this.pc.createOffer(offerOptions).then((desc)=>{
+            debug.log(this.TAG,'offer:',desc.sdp);
+            this.pc.setLocalDescription(desc).then(() => {
+                axios({
+                    method: 'post',
+                    url:this.options.zlmsdpUrl,
+                    responseType:'json'
+                }).then(response=>{
+                    let ret =  JSON.parse(response.data);
+                    if(ret.code != 0)
+                    {// mean failed for offer/anwser exchange 
+                        this.dispatch(Events.WEBRTC_OFFER_ANWSER_EXCHANGE_FAILED,ret);
+                        return;
+                    }
+
+                    anwser.sdp = ret.sdp;
+                    anwser.type = 'anwser';
+                    debug.log(this.TAG,'anwser:',ret.sdp);
+
+                    this.pc.setRemoteDescription(anwser).then(()=>{
+                        debug.log(this.TAG,'set remote sucess');
+                    }).catch(e=>{
+                        debug.error(e);
+                    });
+
+                });
+            });
+        }).catch(e=>{
+            debug.error(this.TAG,e);
+        });
+
+
+
     }
     _onIceCandidate(event) {
         if (event.candidate) {    
@@ -105,7 +151,7 @@ export default class RTCPlayer extends Event
         if(this.options.element && event.streams && event.streams.length>0)
         {
             this.options.element.srcObject = event.streams[0];
-            this.dispatch(PlayerEvents.PLAYER_EVENT_WEBRTC_PLAY_SUCESSS,event);
+            this.dispatch(Events.WEBRTC_ON_REMOTE_STREAMS,event);
         }
         else
         {
@@ -114,7 +160,7 @@ export default class RTCPlayer extends Event
     }
 
     _onIceCandidateError(event){
-        this.dispatch(BaseEvents.BASE_EVENT_WEBRTC_ICE_CANDIDATE_ERROR,event);
+        this.dispatch(Events.WEBRTC_ICE_CANDIDATE_ERROR,event);
     }
 
     close()
