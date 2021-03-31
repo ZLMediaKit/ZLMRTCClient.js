@@ -17,7 +17,11 @@ export default class RTCEndpoint extends Event
             element: '',// html video element
             debug: false,// if output debug log
             zlmsdpUrl:'',
-            simulecast:false
+            simulecast:false,
+            useCamera:true,
+            audioEnable:true,
+            videoEnable:true,
+            recvOnly:false
         };
         
         this.options = Object.assign({}, defaults, options);
@@ -42,13 +46,49 @@ export default class RTCEndpoint extends Event
         this.pc.onicecandidateerror = this.e.onicecandidateerror;
         this.pc.ontrack = this.e.ontrack;
 
-        this.start();
+        if(!this.options.recvOnly && (this.options.audioEnable || this.options.videoEnable))
+            this.start();
+        else
+            this.receive();
+            
+    }
+
+    receive()
+    {
+        debug.error(this.TAG,'this not implement');
     }
 
     start()
     {
-        let audioConstraints = new Base.AudioTrackConstraints(Base.AudioSourceInfo.MIC);
-        let videoConstraints = new Base.VideoTrackConstraints(Base.VideoSourceInfo.CAMERA);
+        let videoConstraints = false;
+        let audioConstraints = false;
+
+        if(this.options.useCamera)
+        {
+            if(this.options.videoEnable)
+                videoConstraints = new Base.VideoTrackConstraints(Base.VideoSourceInfo.CAMERA);
+            if(this.options.audioEnable)
+                audioConstraints = new Base.AudioTrackConstraints(Base.AudioSourceInfo.MIC);
+        }
+        else
+        {
+            if(this.options.videoEnable)
+            {
+                videoConstraints = new Base.VideoTrackConstraints(Base.VideoSourceInfo.SCREENCAST);
+                if(this.options.audioEnable)
+                    audioConstraints = new Base.AudioTrackConstraints(Base.AudioSourceInfo.SCREENCAST);
+            }
+            else
+            {
+                if(this.options.audioEnable)
+                    audioConstraints = new Base.AudioTrackConstraints(Base.AudioSourceInfo.MIC);
+                else
+                {// error shared display media not only audio
+                    debug.error(this.TAG,'error paramter');
+                }
+            }
+            
+        }
 
         Base.MediaStreamFactory.createMediaStream(new Base.StreamConstraints(
             audioConstraints, videoConstraints)).then(stream => {
@@ -56,6 +96,7 @@ export default class RTCEndpoint extends Event
                 this._localStream = stream;
 
                 this.dispatch(Events.WEBRTC_ON_LOCAL_STREAM,stream);
+
                 const  AudioTransceiverInit = {
                     direction: 'sendrecv',
                     sendEncodings:[]
@@ -64,8 +105,8 @@ export default class RTCEndpoint extends Event
                     direction: 'sendrecv',
                     sendEncodings:[],
                   };
-
-                if(this.options.simulecast)
+                
+                if(this.options.simulecast && stream.getVideoTracks().length>0)
                 {
                     VideoTransceiverInit.sendEncodings = [
                         {rid: 'q', active: true, scaleResolutionDownBy: 4.0},
@@ -73,11 +114,31 @@ export default class RTCEndpoint extends Event
                         {rid: 'f', active: true}
                     ];
                 }
+                let audioTransceiver = null;
+                let videoTransceiver = null;
 
-                let audioTransceiver = this.pc.addTransceiver(stream.getAudioTracks()[0],
+                if(stream.getAudioTracks().length>0)
+                {
+                    audioTransceiver = this.pc.addTransceiver(stream.getAudioTracks()[0],
                     AudioTransceiverInit);
-                let videoTransceiver = this.pc.addTransceiver(stream.getVideoTracks()[0],
-                VideoTransceiverInit);
+                }
+                else
+                {
+                    AudioTransceiverInit.direction ='recvonly';
+                    audioTransceiver = this.pc.addTransceiver('audio',AudioTransceiverInit);
+                }
+                
+                if(stream.getVideoTracks().length>0)
+                {
+                    videoTransceiver = this.pc.addTransceiver(stream.getVideoTracks()[0],
+                    VideoTransceiverInit);
+                }
+                else
+                {
+                    VideoTransceiverInit.direction = 'recvonly';
+                    videoTransceiver = this.pc.addTransceiver('video',
+                    VideoTransceiverInit);
+                }
 
                 /*
                 stream.getTracks().forEach((track,idx)=>{
