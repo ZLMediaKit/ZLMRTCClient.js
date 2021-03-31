@@ -16,7 +16,8 @@ export default class RTCEndpoint extends Event
         let defaults = {
             element: '',// html video element
             debug: false,// if output debug log
-            zlmsdpUrl:''
+            zlmsdpUrl:'',
+            simulecast:false
         };
         
         this.options = Object.assign({}, defaults, options);
@@ -61,12 +62,17 @@ export default class RTCEndpoint extends Event
                   };
                 const VideoTransceiverInit= {
                     direction: 'sendrecv',
-                    sendEncodings:[
+                    sendEncodings:[],
+                  };
+
+                if(this.options.simulecast)
+                {
+                    VideoTransceiverInit.sendEncodings = [
                         {rid: 'q', active: true, scaleResolutionDownBy: 4.0},
                         {rid: 'h', active: true, scaleResolutionDownBy: 2.0},
                         {rid: 'f', active: true}
-                    ],
-                  };
+                    ];
+                }
 
                 let audioTransceiver = this.pc.addTransceiver(stream.getAudioTracks()[0],
                     AudioTransceiverInit);
@@ -85,7 +91,11 @@ export default class RTCEndpoint extends Event
                         axios({
                             method: 'post',
                             url:this.options.zlmsdpUrl,
-                            responseType:'json'
+                            responseType:'json',
+                            data:desc.sdp,
+                            headers:{
+                                'Content-Type':'text/plain;charset=utf-8'
+                            }
                         }).then(response=>{
                             let ret =  JSON.parse(response.data);
                             if(ret.code != 0)

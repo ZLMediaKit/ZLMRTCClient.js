@@ -22,7 +22,12 @@
 
             <p>
                 <label for="streamUrl">url:</label>
-                <input type="text" id='streamUrl' value="http://192.168.0.234/webrtc?app=live&stream=xiong">
+                <input type="text" id='streamUrl' value="http://192.168.0.234/index/api/webrtc?app=live&stream=xiong">
+            </p>
+
+            <p>
+              <label for="simulecast">simulecast:</label>
+              <input type="checkbox" id='simulecast' checked="checked">
             </p>
             <button onclick="start()">开始</button>
             <button onclick="stop()">停止</button>
@@ -39,7 +44,8 @@
             {
                 element: document.getElementById('video'),// video 标签
                 debug: true,// 是否打印日志
-                zlmsdpUrl:document.getElementById('streamUrl').value//流地址
+                zlmsdpUrl:document.getElementById('streamUrl').value,//流地址
+                simulecast:document.getElementById('simulecast').checked
             }
         );
 
