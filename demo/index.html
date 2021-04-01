@@ -45,6 +45,11 @@
               <input type="checkbox" id='videoEnable' checked="checked">
             </p>
 
+            <p>
+              <label for="recvOnly">recvOnly:</label>
+              <input type="checkbox" id='recvOnly' checked="checked">
+            </p>
+
             <button onclick="start()">开始</button>
             <button onclick="stop()">停止</button>
             
@@ -64,8 +69,8 @@
                 simulecast:document.getElementById('simulecast').checked,
                 useCamera:document.getElementById('useCamera').checked,
                 audioEnable:document.getElementById('audioEnable').checked,
-                videoEnable:document.getElementById('videoEnable').checked
-
+                videoEnable:document.getElementById('videoEnable').checked,
+                recvOnly:document.getElementById('recvOnly').checked
             }
         );
 
@@ -82,6 +87,7 @@
         player.on(ZLMRTCClient.Events.WEBRTC_OFFER_ANWSER_EXCHANGE_FAILED,function(e)
         {// offer anwser 交换失败
             console.log('offer anwser 交换失败',e)
+            stop();
         });
 
         player.on(ZLMRTCClient.Events.WEBRTC_ON_LOCAL_STREAM,function(s)

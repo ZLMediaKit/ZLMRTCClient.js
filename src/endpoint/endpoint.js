@@ -55,7 +55,55 @@ export default class RTCEndpoint extends Event
 
     receive()
     {
-        debug.error(this.TAG,'this not implement');
+        let audioTransceiver = null;
+        let videoTransceiver = null;
+
+        //debug.error(this.TAG,'this not implement');
+        const  AudioTransceiverInit = {
+            direction: 'recvonly',
+            sendEncodings:[]
+          };
+        const VideoTransceiverInit= {
+            direction: 'recvonly',
+            sendEncodings:[],
+          };
+
+        audioTransceiver = this.pc.addTransceiver('audio',AudioTransceiverInit);
+        videoTransceiver = this.pc.addTransceiver('video',VideoTransceiverInit);
+        
+        this.pc.createOffer().then((desc)=>{
+            debug.log(this.TAG,'offer:',desc.sdp);
+            this.pc.setLocalDescription(desc).then(() => {
+                axios({
+                    method: 'post',
+                    url:this.options.zlmsdpUrl,
+                    responseType:'json',
+                    data:desc.sdp,
+                    headers:{
+                        'Content-Type':'text/plain;charset=utf-8'
+                    }
+                }).then(response=>{
+                    let ret =  response.data;//JSON.parse(response.data);
+                    if(ret.code != 0)
+                    {// mean failed for offer/anwser exchange 
+                        this.dispatch(Events.WEBRTC_OFFER_ANWSER_EXCHANGE_FAILED,ret);
+                        return;
+                    }
+                    let anwser = {};
+                    anwser.sdp = ret.sdp;
+                    anwser.type = 'answer';
+                    debug.log(this.TAG,'answer:',ret.sdp);
+
+                    this.pc.setRemoteDescription(anwser).then(()=>{
+                        debug.log(this.TAG,'set remote sucess');
+                    }).catch(e=>{
+                        debug.error(this.TAG,e);
+                    });
+                });
+            });
+        }).catch(e=>{
+            debug.error(this.TAG,e);
+        });
     }
 
     start()
