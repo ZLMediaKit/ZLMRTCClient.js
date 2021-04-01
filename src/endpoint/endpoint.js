@@ -158,7 +158,7 @@ export default class RTCEndpoint extends Event
                                 'Content-Type':'text/plain;charset=utf-8'
                             }
                         }).then(response=>{
-                            let ret =  JSON.parse(response.data);
+                            let ret =  response.data;//JSON.parse(response.data);
                             if(ret.code != 0)
                             {// mean failed for offer/anwser exchange 
                                 this.dispatch(Events.WEBRTC_OFFER_ANWSER_EXCHANGE_FAILED,ret);
