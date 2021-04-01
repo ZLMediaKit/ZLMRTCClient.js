@@ -166,8 +166,8 @@ export default class RTCEndpoint extends Event
                             }
                             let anwser = {};
                             anwser.sdp = ret.sdp;
-                            anwser.type = 'anwser';
-                            debug.log(this.TAG,'anwser:',ret.sdp);
+                            anwser.type = 'answer';
+                            debug.log(this.TAG,'answer:',ret.sdp);
         
                             this.pc.setRemoteDescription(anwser).then(()=>{
                                 debug.log(this.TAG,'set remote sucess');
