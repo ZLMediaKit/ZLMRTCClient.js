@@ -21,7 +21,8 @@ export default class RTCEndpoint extends Event
             useCamera:true,
             audioEnable:true,
             videoEnable:true,
-            recvOnly:false
+            recvOnly:false,
+            resolution:{w:0,h:0}
         };
         
         this.options = Object.assign({}, defaults, options);
@@ -138,6 +139,10 @@ export default class RTCEndpoint extends Event
             
         }
 
+        if(this.options.resolution.w !=0 && this.options.resolution.h!=0 && typeof videoConstraints == 'object'){
+            videoConstraints.resolution = new Base.Resolution(this.options.resolution.w ,this.options.resolution.h);
+        }
+
         Base.MediaStreamFactory.createMediaStream(new Base.StreamConstraints(
             audioConstraints, videoConstraints)).then(stream => {
 
@@ -229,7 +234,8 @@ export default class RTCEndpoint extends Event
                 });
 
             }).catch(e=>{
-                debug.error(this.TAG,e);
+                this.dispatch(Events.CAPTURE_STREAM_FAILED);
+                //debug.error(this.TAG,e);
             });
         
         //const offerOptions = {};
