@@ -97,17 +97,13 @@
 
         
       })
-
-      function start()
-      {
-        stop();
+      function start_play(){
         let elr = document.getElementById("resilution");
         let res = elr.options[elr.selectedIndex].text.match(/\d+/g);
         let h = parseInt(res.pop());
         let w = parseInt(res.pop());
 
-        ZLMRTCClient.isSupportResolution(w,h).then(e=>{
-            player = new ZLMRTCClient.Endpoint(
+        player = new ZLMRTCClient.Endpoint(
                 {
                     element: document.getElementById('video'),// video 标签
                     debug: true,// 是否打印日志
@@ -151,11 +147,26 @@
     
               console.log('获取本地流失败')
             });
+      }
 
-        }).catch(e=>{
-         alert("not support resolution")
-        });
-        
+      function start()
+      {
+        stop();
+        let elr = document.getElementById("resilution");
+        let res = elr.options[elr.selectedIndex].text.match(/\d+/g);
+        let h = parseInt(res.pop());
+        let w = parseInt(res.pop());
+
+        if(document.getElementById('useCamera').checked && !recvOnly)
+        {
+          ZLMRTCClient.isSupportResolution(w,h).then(e=>{
+            start_play()
+          }).catch(e=>{
+           alert("not support resolution")
+          });
+        }else{
+          start_play()
+        }
       }
 
       function stop()
