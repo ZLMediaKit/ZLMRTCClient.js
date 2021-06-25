@@ -17,7 +17,7 @@ export default class RTCEndpoint extends Event
             element: '',// html video element
             debug: false,// if output debug log
             zlmsdpUrl:'',
-            simulecast:false,
+            simulcast:false,
             useCamera:true,
             audioEnable:true,
             videoEnable:true,
@@ -159,12 +159,12 @@ export default class RTCEndpoint extends Event
                     sendEncodings:[],
                   };
                 
-                if(this.options.simulecast && stream.getVideoTracks().length>0)
+                if(this.options.simulcast && stream.getVideoTracks().length>0)
                 {
                     VideoTransceiverInit.sendEncodings = [
-                        {rid: 'q', active: true, scaleResolutionDownBy: 4.0},
-                        {rid: 'h', active: true, scaleResolutionDownBy: 2.0},
-                        {rid: 'f', active: true}
+                        { rid: 'h', active: true, maxBitrate: 1000000 },
+                        { rid: 'm', active: true, maxBitrate: 500000, scaleResolutionDownBy: 2 },
+                        { rid: 'l', active: true, maxBitrate: 200000, scaleResolutionDownBy: 4 }
                     ];
                 }
                 let audioTransceiver = null;
