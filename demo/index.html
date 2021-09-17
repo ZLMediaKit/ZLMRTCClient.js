@@ -176,7 +176,7 @@
             player.close();
             player = null;
             var local = document.getElementById('selfVideo');
-            local.removeAttribute('srcObject');
+            local.srcObject = null;
             local.load();
           }
       }
