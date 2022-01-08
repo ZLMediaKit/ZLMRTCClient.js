@@ -35,7 +35,8 @@ export default class RTCEndpoint extends Event
         this.e = {
             onicecandidate:this._onIceCandidate.bind(this),
             ontrack:this._onTrack.bind(this),
-            onicecandidateerror:this._onIceCandidateError.bind(this)
+            onicecandidateerror:this._onIceCandidateError.bind(this),
+            onconnectionstatechange:this._onconnectionstatechange.bind(this)
         };
 
         this._remoteStream = null;
@@ -46,6 +47,7 @@ export default class RTCEndpoint extends Event
         this.pc.onicecandidate = this.e.onicecandidate;
         this.pc.onicecandidateerror = this.e.onicecandidateerror;
         this.pc.ontrack = this.e.ontrack;
+        this.pc.onconnectionstatechange = this.e.onconnectionstatechange;
 
         if(!this.options.recvOnly && (this.options.audioEnable || this.options.videoEnable))
             this.start();
@@ -279,6 +281,10 @@ export default class RTCEndpoint extends Event
 
     _onIceCandidateError(event){
         this.dispatch(Events.WEBRTC_ICE_CANDIDATE_ERROR,event);
+    }
+
+    _onconnectionstatechange(event) {
+        this.dispatch(Events.WEBRTC_ON_CONNECTION_STATE_CHANGE, this.pc.connectionState);
     }
 
     close()
