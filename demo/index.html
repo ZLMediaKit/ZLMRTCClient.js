@@ -192,6 +192,12 @@
           {
             player.close();
             player = null;
+            var remote = document.getElementById('video');
+            if(remote)
+            {
+                remote.srcObject = null;
+                remote.load();
+            }
             var local = document.getElementById('selfVideo');
             local.srcObject = null;
             local.load();
