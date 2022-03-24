@@ -22,7 +22,8 @@ export default class RTCEndpoint extends Event
             audioEnable:true,
             videoEnable:true,
             recvOnly:false,
-            resolution:{w:0,h:0}
+            resolution:{w:0,h:0},
+            usedatachannel:false,
         };
         
         this.options = Object.assign({}, defaults, options);
@@ -36,7 +37,11 @@ export default class RTCEndpoint extends Event
             onicecandidate:this._onIceCandidate.bind(this),
             ontrack:this._onTrack.bind(this),
             onicecandidateerror:this._onIceCandidateError.bind(this),
-            onconnectionstatechange:this._onconnectionstatechange.bind(this)
+            onconnectionstatechange:this._onconnectionstatechange.bind(this),
+            ondatachannelopen:this._onDataChannelOpen.bind(this),
+            ondatachannelmsg:this._onDataChannelMsg.bind(this),
+            ondatachannelerr:this._onDataChannelErr.bind(this),
+            ondatachannelclose:this._onDataChannelClose.bind(this),
         };
 
         this._remoteStream = null;
@@ -48,6 +53,15 @@ export default class RTCEndpoint extends Event
         this.pc.onicecandidateerror = this.e.onicecandidateerror;
         this.pc.ontrack = this.e.ontrack;
         this.pc.onconnectionstatechange = this.e.onconnectionstatechange;
+
+        this.datachannel = null;
+        if(this.options.usedatachannel){
+            this.datachannel = this.pc.createDataChannel('chat');
+            this.datachannel.onclose = this.e.ondatachannelclose;
+            this.datachannel.onerror = this.e.ondatachannelerr;
+            this.datachannel.onmessage = this.e.ondatachannelmsg;
+            this.datachannel.onopen = this.e.ondatachannelopen;
+        }
 
         if(!this.options.recvOnly && (this.options.audioEnable || this.options.videoEnable))
             this.start();
@@ -171,28 +185,27 @@ export default class RTCEndpoint extends Event
                 }
                 let audioTransceiver = null;
                 let videoTransceiver = null;
-
-                if(stream.getAudioTracks().length>0)
-                {
-                    audioTransceiver = this.pc.addTransceiver(stream.getAudioTracks()[0],
-                    AudioTransceiverInit);
-                }
-                else
-                {
-                    AudioTransceiverInit.direction ='recvonly';
-                    audioTransceiver = this.pc.addTransceiver('audio',AudioTransceiverInit);
+                if (this.options.audioEnable) {
+                    if (stream.getAudioTracks().length > 0) {
+                        audioTransceiver = this.pc.addTransceiver(stream.getAudioTracks()[0],
+                            AudioTransceiverInit);
+                    }
+                    else {
+                        AudioTransceiverInit.direction = 'recvonly';
+                        audioTransceiver = this.pc.addTransceiver('audio', AudioTransceiverInit);
+                    }
                 }
                 
-                if(stream.getVideoTracks().length>0)
-                {
-                    videoTransceiver = this.pc.addTransceiver(stream.getVideoTracks()[0],
-                    VideoTransceiverInit);
-                }
-                else
-                {
-                    VideoTransceiverInit.direction = 'recvonly';
-                    videoTransceiver = this.pc.addTransceiver('video',
-                    VideoTransceiverInit);
+                if (this.options.videoEnable) {
+                    if (stream.getVideoTracks().length > 0) {
+                        videoTransceiver = this.pc.addTransceiver(stream.getVideoTracks()[0],
+                            VideoTransceiverInit);
+                    }
+                    else {
+                        VideoTransceiverInit.direction = 'recvonly';
+                        videoTransceiver = this.pc.addTransceiver('video',
+                            VideoTransceiverInit);
+                    }
                 }
 
                 /*
@@ -287,8 +300,38 @@ export default class RTCEndpoint extends Event
         this.dispatch(Events.WEBRTC_ON_CONNECTION_STATE_CHANGE, this.pc.connectionState);
     }
 
+    _onDataChannelOpen(event) {
+        debug.log(this.TAG,'ondatachannel open:',event);
+        this.dispatch(Events.WEBRTC_ON_DATA_CHANNEL_OPEN,event);
+    }
+    _onDataChannelMsg(event) {
+        debug.log(this.TAG,'ondatachannel msg:',event);
+        this.dispatch(Events.WEBRTC_ON_DATA_CHANNEL_MSG,event);
+    }
+    _onDataChannelErr(event){
+        debug.log(this.TAG,'ondatachannel err:',event);
+        this.dispatch(Events.WEBRTC_ON_DATA_CHANNEL_ERR,event);
+    }
+    _onDataChannelClose(event){
+        debug.log(this.TAG,'ondatachannel close:',event);
+        this.dispatch(Events.WEBRTC_ON_DATA_CHANNEL_CLOSE,event);
+    }
+    sendMsg(data){
+        if(this.datachannel !=null){
+            this.datachannel.send(data);
+        }else{
+            debug.error(this.TAG,'data channel is null');
+        }
+    }
+    closeDataChannel(){
+        if(this.datachannel){
+            this.datachannel.close();
+            this.datachannel = null;
+        }
+    }
     close()
-    {
+    {  
+        this.closeDataChannel();
         if(this.pc)
         {
             this.pc.close();
