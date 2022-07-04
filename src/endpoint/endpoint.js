@@ -84,9 +84,13 @@ export default class RTCEndpoint extends Event
             direction: 'recvonly',
             sendEncodings:[],
           };
-
-        audioTransceiver = this.pc.addTransceiver('audio',AudioTransceiverInit);
-        videoTransceiver = this.pc.addTransceiver('video',VideoTransceiverInit);
+        
+        if(this.options.videoEnable){
+            videoTransceiver = this.pc.addTransceiver('video',VideoTransceiverInit);
+        }
+        if(this.options.audioEnable){
+            audioTransceiver = this.pc.addTransceiver('audio',AudioTransceiverInit);
+        }
         
         this.pc.createOffer().then((desc)=>{
             debug.log(this.TAG,'offer:',desc.sdp);
