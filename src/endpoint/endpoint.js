@@ -47,6 +47,7 @@ export default class RTCEndpoint extends Event
         this._remoteStream = null;
         this._localStream = null;
 
+        this._tracks = [];
         this.pc = new RTCPeerConnection(null);
 
         this.pc.onicecandidate = this.e.onicecandidate;
@@ -274,7 +275,7 @@ export default class RTCEndpoint extends Event
     }
     _onIceCandidate(event) {
         if (event.candidate) {    
-            debug.log('Remote ICE candidate: \n ' + event.candidate.candidate);
+            debug.log(this.TAG,'Remote ICE candidate: \n ' + event.candidate.candidate);
             // Send the candidate to the remote peer
         }
         else {
@@ -283,6 +284,7 @@ export default class RTCEndpoint extends Event
     }
 
     _onTrack(event){
+        this._tracks.push(event.track);
         if(this.options.element && event.streams && event.streams.length>0)
         {
             this.options.element.srcObject = event.streams[0];
@@ -292,7 +294,13 @@ export default class RTCEndpoint extends Event
         }
         else
         {
-            debug.error('element pararm is failed');
+            if(this.pc.getReceivers().length ==this._tracks.length){
+                debug.log(this.TAG,'play remote stream ');
+                this._remoteStream = new MediaStream(this._tracks);
+                this.options.element.srcObject = this._remoteStream;
+            }else{
+                debug.error(this.TAG,'wait stream track finish');
+            }
         }
     }
 
@@ -360,6 +368,11 @@ export default class RTCEndpoint extends Event
                 track.stop();
             });
         }
+
+        this._tracks.forEach((track, idx) => {
+          track.stop();
+        });
+        this._tracks = [];
     }
 
     get remoteStream()
